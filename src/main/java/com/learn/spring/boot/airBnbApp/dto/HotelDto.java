@@ -1,6 +1,7 @@
 package com.learn.spring.boot.airBnbApp.dto;
 
 import com.learn.spring.boot.airBnbApp.entity.ContactInfo;
+import com.learn.spring.boot.airBnbApp.entity.User;
 import lombok.Data;
 
 import java.util.List;
@@ -20,4 +21,6 @@ public class HotelDto {
     private ContactInfo contactInfo;
 
     private Boolean active;
+
+    //private User owner;
 }

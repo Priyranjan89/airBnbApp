@@ -12,7 +12,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Embeddable
 public class ContactInfo {
-    private String completeAddress;
+    private String address;
     private String location;
     private String email;
     private String phoneNumber;
