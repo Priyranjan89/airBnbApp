@@ -65,8 +65,9 @@ public class RoomServiceImpl implements RoomService{
     public void deleteRoomById(Long roomId) {
         log.info("Deleting the room with ID: {}", roomId);
         isRoomExist(roomId);
+        Room room = roomRepository.findById(roomId).get();
         roomRepository.deleteById(roomId);
-        //TODO : Delete all future inventory for this room
+        inventoryService.deleteFutureInventories(room);
     }
 
     private void isHotelExist(Long hotelId) {
