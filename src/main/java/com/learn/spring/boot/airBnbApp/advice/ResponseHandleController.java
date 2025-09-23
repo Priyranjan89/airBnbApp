@@ -22,6 +22,13 @@ public class ResponseHandleController implements ResponseBodyAdvice<Object> {
                                   Class<? extends HttpMessageConverter<?>> selectedConverterType,
                                   ServerHttpRequest request,
                                   ServerHttpResponse response) {
+
+        String path = request.getURI().getPath();
+        if (path.contains("/v3/api-docs") || path.contains("/swagger-ui")) {
+            return body;
+        }
+
+        // If already wrapped, return as-is
         if (body instanceof ApiResponse<?>) {
             return body;
         }

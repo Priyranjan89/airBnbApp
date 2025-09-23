@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -62,12 +63,13 @@ public class RoomServiceImpl implements RoomService{
     }
 
     @Override
+    @Transactional
     public void deleteRoomById(Long roomId) {
         log.info("Deleting the room with ID: {}", roomId);
         isRoomExist(roomId);
         Room room = roomRepository.findById(roomId).get();
+        inventoryService.deleteAllInventoriesForRoom(room);
         roomRepository.deleteById(roomId);
-        inventoryService.deleteFutureInventories(room);
     }
 
     private void isHotelExist(Long hotelId) {

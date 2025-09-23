@@ -11,4 +11,6 @@ public interface HotelAdminService {
 
     Boolean deleteHotelById(Long hotelId);
     void activeHotel(Long hotelId);
+
+    Object getHotelInfoById(Long hotelId);
 }

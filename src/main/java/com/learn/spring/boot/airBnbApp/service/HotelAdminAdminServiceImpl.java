@@ -1,6 +1,8 @@
 package com.learn.spring.boot.airBnbApp.service;
 
 import com.learn.spring.boot.airBnbApp.dto.HotelDto;
+import com.learn.spring.boot.airBnbApp.dto.HotelInfoDto;
+import com.learn.spring.boot.airBnbApp.dto.RoomDto;
 import com.learn.spring.boot.airBnbApp.entity.Hotel;
 import com.learn.spring.boot.airBnbApp.entity.Room;
 import com.learn.spring.boot.airBnbApp.exception.ResourceNotFoundException;
@@ -9,6 +11,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @Slf4j
@@ -20,6 +25,8 @@ public class HotelAdminAdminServiceImpl implements HotelAdminService {
     private final ModelMapper modelMapper;
 
     private final InventoryService inventoryService;
+
+    private final RoomService roomService;
 
     @Override
     public HotelDto createHotel(HotelDto hotelDto) {
@@ -57,17 +64,21 @@ public class HotelAdminAdminServiceImpl implements HotelAdminService {
     }
 
     @Override
+    @Transactional
     public Boolean deleteHotelById(Long hotelId) {
         isHotelExist(hotelId);
         Hotel hotel = hotelRepository.findById(hotelId).get();
-        hotelRepository.deleteById(hotelId);
+
         for(Room room: hotel.getRooms()) {
             inventoryService.deleteFutureInventories(room);
+            roomService.deleteRoomById(room.getId());
         }
+        hotelRepository.deleteById(hotelId);
         return true;
     }
 
     @Override
+    @Transactional
     public void activeHotel(Long hotelId) {
         log.info("Activating the hotel with id: {}", hotelId);
         isHotelExist(hotelId);
@@ -78,9 +89,22 @@ public class HotelAdminAdminServiceImpl implements HotelAdminService {
         for (Room room : hotel.getRooms()){
             inventoryService.initializeRoomForAYear(room);
         }
-
-        hotelRepository.save(hotel);
+        //hotelRepository.save(hotel);
         log.info("Hotel Got Activated with id: {}", hotelId);
+    }
+
+    @Override
+    public HotelInfoDto getHotelInfoById(Long hotelId) {
+        Hotel hotel = hotelRepository
+                .findById(hotelId)
+                .orElseThrow(() -> new ResourceNotFoundException("Hotel not found with ID: "+hotelId));
+
+        List<RoomDto> rooms = hotel.getRooms()
+                .stream()
+                .map((element) -> modelMapper.map(element, RoomDto.class))
+                .toList();
+
+        return new HotelInfoDto(modelMapper.map(hotel, HotelDto.class), rooms);
     }
 
     private void isHotelExist(Long hotelId) {
