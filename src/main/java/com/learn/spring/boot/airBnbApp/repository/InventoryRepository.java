@@ -15,9 +15,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.util.List;
 
-@Repository
 public interface InventoryRepository extends JpaRepository<Inventory, Long> {
-    void deleteByDateAfterAndRoom(LocalDate today, Room room);
 
     void deleteByRoom(Room room);
 
@@ -55,4 +53,9 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
             @Param("endDate") LocalDate endDate,
             @Param("roomsCount") Integer roomsCount
     );
+
+
+    List<Inventory> findByHotelAndDateBetween(Hotel hotel, LocalDate startDate, LocalDate endDate);
+
+    void deleteByDateAfterAndRoom(LocalDate today, Room room);
 }

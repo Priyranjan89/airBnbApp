@@ -3,12 +3,15 @@ package com.learn.spring.boot.airBnbApp.service;
 import com.learn.spring.boot.airBnbApp.dto.RoomDto;
 import com.learn.spring.boot.airBnbApp.entity.Hotel;
 import com.learn.spring.boot.airBnbApp.entity.Room;
+import com.learn.spring.boot.airBnbApp.entity.User;
 import com.learn.spring.boot.airBnbApp.exception.ResourceNotFoundException;
+import com.learn.spring.boot.airBnbApp.exception.UnAuthorisedException;
 import com.learn.spring.boot.airBnbApp.repository.HotelRepository;
 import com.learn.spring.boot.airBnbApp.repository.RoomRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +35,12 @@ public class RoomServiceImpl implements RoomService{
 
         isHotelExist(hotelId);
         Hotel hotel = hotelRepository.findById(hotelId).get();
+
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if(!user.equals(hotel.getOwner())) {
+            throw new UnAuthorisedException("This user does not own this hotel with id: "+hotelId);
+        }
+
         room.setHotel(hotel);
         room = roomRepository.save(room);
 
@@ -68,6 +77,12 @@ public class RoomServiceImpl implements RoomService{
         log.info("Deleting the room with ID: {}", roomId);
         isRoomExist(roomId);
         Room room = roomRepository.findById(roomId).get();
+
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if(!user.equals(room.getHotel().getOwner())) {
+            throw new UnAuthorisedException("This user does not own this room in the hotel with id: "+roomId);
+        }
+
         inventoryService.deleteAllInventoriesForRoom(room);
         roomRepository.deleteById(roomId);
     }
