@@ -29,5 +29,5 @@ public class HotelDto {
 
     private Boolean active;
 
-    //private User owner;
+    private UserDto owner;
 }

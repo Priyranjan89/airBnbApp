@@ -6,6 +6,7 @@ import com.learn.spring.boot.airBnbApp.dto.RoomDto;
 import com.learn.spring.boot.airBnbApp.entity.Hotel;
 import com.learn.spring.boot.airBnbApp.entity.Room;
 import com.learn.spring.boot.airBnbApp.entity.User;
+import com.learn.spring.boot.airBnbApp.entity.enums.Role;
 import com.learn.spring.boot.airBnbApp.exception.ResourceNotFoundException;
 import com.learn.spring.boot.airBnbApp.exception.UnAuthorisedException;
 import com.learn.spring.boot.airBnbApp.repository.HotelRepository;
@@ -51,7 +52,7 @@ public class HotelAdminAdminServiceImpl implements HotelAdminService {
                 .orElseThrow(() -> new ResourceNotFoundException("Hotel not found with id: "+hotelId));
 
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if(!user.equals(hotel.getOwner())) {
+        if(!(user.equals(hotel.getOwner()) || user.getRoles().contains(Role.HOTEL_MANAGER))) {
             throw new UnAuthorisedException("This user does not own this hotel with id: "+hotelId);
         }
 
@@ -67,7 +68,7 @@ public class HotelAdminAdminServiceImpl implements HotelAdminService {
         Hotel exitingHotel = hotelRepository.findById(hotelId).get();
 
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if(!user.equals(exitingHotel.getOwner())) {
+        if(!(user.equals(exitingHotel.getOwner()) || user.getRoles().contains(Role.HOTEL_MANAGER))) {
             throw new UnAuthorisedException("This user does not own this hotel with id: "+hotelId);
         }
 
@@ -86,7 +87,7 @@ public class HotelAdminAdminServiceImpl implements HotelAdminService {
         Hotel hotel = hotelRepository.findById(hotelId).get();
 
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if(!user.equals(hotel.getOwner())) {
+        if(!(user.equals(hotel.getOwner()) || user.getRoles().contains(Role.HOTEL_MANAGER))) {
             throw new UnAuthorisedException("This user does not own this hotel with id: "+hotelId);
         }
 
@@ -106,7 +107,8 @@ public class HotelAdminAdminServiceImpl implements HotelAdminService {
         Hotel hotel = hotelRepository.findById(hotelId).get();
 
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if(!user.equals(hotel.getOwner())) {
+
+        if(!(user.equals(hotel.getOwner()) || user.getRoles().contains(Role.HOTEL_MANAGER))) {
             throw new UnAuthorisedException("This user does not own this hotel with id: "+hotelId);
         }
 

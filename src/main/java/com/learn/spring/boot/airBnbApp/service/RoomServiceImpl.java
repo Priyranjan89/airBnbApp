@@ -4,6 +4,7 @@ import com.learn.spring.boot.airBnbApp.dto.RoomDto;
 import com.learn.spring.boot.airBnbApp.entity.Hotel;
 import com.learn.spring.boot.airBnbApp.entity.Room;
 import com.learn.spring.boot.airBnbApp.entity.User;
+import com.learn.spring.boot.airBnbApp.entity.enums.Role;
 import com.learn.spring.boot.airBnbApp.exception.ResourceNotFoundException;
 import com.learn.spring.boot.airBnbApp.exception.UnAuthorisedException;
 import com.learn.spring.boot.airBnbApp.repository.HotelRepository;
@@ -37,7 +38,7 @@ public class RoomServiceImpl implements RoomService{
         Hotel hotel = hotelRepository.findById(hotelId).get();
 
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if(!user.equals(hotel.getOwner())) {
+        if(!(user.equals(hotel.getOwner()) || user.getRoles().contains(Role.HOTEL_MANAGER))){
             throw new UnAuthorisedException("This user does not own this hotel with id: "+hotelId);
         }
 
@@ -79,7 +80,7 @@ public class RoomServiceImpl implements RoomService{
         Room room = roomRepository.findById(roomId).get();
 
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if(!user.equals(room.getHotel().getOwner())) {
+        if(!(user.equals(room.getHotel().getOwner()) || user.getRoles().contains(Role.HOTEL_MANAGER))){
             throw new UnAuthorisedException("This user does not own this room in the hotel with id: "+roomId);
         }
 

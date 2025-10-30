@@ -17,10 +17,17 @@ import com.learn.spring.boot.airBnbApp.repository.GuestRepository;
 import com.learn.spring.boot.airBnbApp.repository.HotelRepository;
 import com.learn.spring.boot.airBnbApp.repository.InventoryRepository;
 import com.learn.spring.boot.airBnbApp.repository.RoomRepository;
+import com.learn.spring.boot.airBnbApp.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +47,7 @@ public class BookingServiceImpl implements BookingService{
     private final HotelRepository hotelRepository;
     private final RoomRepository roomRepository;
     private final InventoryRepository inventoryRepository;
+    private final UserRepository userRepository;
 
     @Override
     @Transactional
@@ -102,7 +110,7 @@ public class BookingServiceImpl implements BookingService{
                 new ResourceNotFoundException("Booking not found with id: "+bookingId));
         User user = getCurrentUser();
 
-        if (!user.equals(booking.getUser())) {
+        if (!user.getId().equals(booking.getUser().getId())) {
             throw new UnAuthorisedException("Booking does not belong to this user with id: "+user.getId());
         }
 
@@ -126,11 +134,39 @@ public class BookingServiceImpl implements BookingService{
         return modelMapper.map(booking, BookingDto.class);
     }
 
+    public Page<BookingDto> getAllBookings(Pageable pageable) {
+        return bookingRepository.findAll(pageable)
+                .map(b -> modelMapper.map(b, BookingDto.class));
+    }
+
+    @Override
+    public Page<BookingDto> getBookingsByUserId(Long userId, Pageable pageable) {
+        return bookingRepository.findByUserId(userId, pageable)
+                .map(b -> modelMapper.map(b, BookingDto.class));
+    }
+
+    @Override
+    public Page<BookingDto> getMyBookings(Pageable pageable) {
+        Long currentUserId = getCurrentUser().getId();
+        return bookingRepository.findByUserId(currentUserId, pageable)
+                .map(b -> modelMapper.map(b, BookingDto.class));
+    }
+
+    @Override
+    public BookingDto getBookingById(Long bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with bookingId: " + bookingId));
+        return modelMapper.map(booking, BookingDto.class);
+    }
+
     public boolean hasBookingExpired(Booking booking) {
         return booking.getCreatedAt().plusMinutes(10).isBefore(LocalDateTime.now());
     }
 
     public User getCurrentUser() {
-        return (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName(); // from JWT or login
+        return userRepository.findByEmail(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
     }
 }
