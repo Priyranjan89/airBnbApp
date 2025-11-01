@@ -2,13 +2,12 @@ package com.learn.spring.boot.airBnbApp.controller;
 
 
 import com.learn.spring.boot.airBnbApp.dto.BookingDto;
+import com.learn.spring.boot.airBnbApp.dto.BookingPaymentInitResponseDto;
 import com.learn.spring.boot.airBnbApp.dto.BookingRequest;
-import com.learn.spring.boot.airBnbApp.dto.GuestDto;
+import com.learn.spring.boot.airBnbApp.dto.BookingStatusResponseDto;
 import com.learn.spring.boot.airBnbApp.service.BookingService;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,27 +31,30 @@ public class HotelBookingController {
     }
 
     @PostMapping("/{bookingId}/addGuests")
+    @Operation(summary = "Add guest Ids to the booking", tags = {"Booking Flow"})
     public ResponseEntity<BookingDto> addGuests(@PathVariable Long bookingId,
-                                                @RequestBody List<GuestDto> guestDtoList) {
-        return ResponseEntity.ok(bookingService.addGuests(bookingId, guestDtoList));
+                                                @RequestBody List<Long> guestIdList) {
+        return ResponseEntity.ok(bookingService.addGuests(bookingId, guestIdList));
     }
 
-    @GetMapping
-    public ResponseEntity<Page<BookingDto>> getAllBookings(
-            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
-        return ResponseEntity.ok(bookingService.getAllBookings(pageable));
+    @PostMapping("/{bookingId}/payments")
+    @Operation(summary = "Initiate payments flow for the booking", tags = {"Booking Flow"})
+    public ResponseEntity<BookingPaymentInitResponseDto> initiatePayment(@PathVariable Long bookingId) {
+        String sessionUrl = bookingService.initiatePayments(bookingId);
+        return ResponseEntity.ok(new BookingPaymentInitResponseDto(sessionUrl));
     }
 
-    @GetMapping("/{bookingId}")
-    public ResponseEntity<BookingDto> getBookingById(@PathVariable Long bookingId) {
-        return ResponseEntity.ok(bookingService.getBookingById(bookingId));
+    @PostMapping("/{bookingId}/cancel")
+    @Operation(summary = "Cancel the booking", tags = {"Booking Flow"})
+    public ResponseEntity<Void> cancelBooking(@PathVariable Long bookingId) {
+        bookingService.cancelBooking(bookingId);
+        return ResponseEntity.noContent().build();
     }
-    
-    @GetMapping("/users/{userId}")
-    public ResponseEntity<Page<BookingDto>> getBookingsByUser(
-            @PathVariable Long userId,
-            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
-        return ResponseEntity.ok(bookingService.getBookingsByUserId(userId, pageable));
+
+    @GetMapping("/{bookingId}/status")
+    @Operation(summary = "Check the status of the booking", tags = {"Booking Flow"})
+    public ResponseEntity<BookingStatusResponseDto> getBookingStatus(@PathVariable Long bookingId) {
+        return ResponseEntity.ok(new BookingStatusResponseDto(bookingService.getBookingStatus(bookingId)));
     }
 
 }
