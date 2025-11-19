@@ -1,6 +1,10 @@
 package com.learn.spring.boot.airBnbApp.service;
 
 import com.learn.spring.boot.airBnbApp.dto.HotelDto;
+import com.learn.spring.boot.airBnbApp.dto.HotelInfoDto;
+import com.learn.spring.boot.airBnbApp.dto.HotelInfoRequestDto;
+
+import java.util.List;
 
 public interface HotelAdminService {
 
@@ -12,5 +16,7 @@ public interface HotelAdminService {
     Boolean deleteHotelById(Long hotelId);
     void activeHotel(Long hotelId);
 
-    Object getHotelInfoById(Long hotelId);
+    HotelInfoDto getHotelInfoById(Long hotelId, HotelInfoRequestDto hotelInfoRequestDto);
+
+    List<HotelDto> getAllHotels();
 }

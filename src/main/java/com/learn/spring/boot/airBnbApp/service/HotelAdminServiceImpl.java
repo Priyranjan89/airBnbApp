@@ -2,7 +2,9 @@ package com.learn.spring.boot.airBnbApp.service;
 
 import com.learn.spring.boot.airBnbApp.dto.HotelDto;
 import com.learn.spring.boot.airBnbApp.dto.HotelInfoDto;
-import com.learn.spring.boot.airBnbApp.dto.RoomDto;
+import com.learn.spring.boot.airBnbApp.dto.HotelInfoRequestDto;
+import com.learn.spring.boot.airBnbApp.dto.RoomPriceDto;
+import com.learn.spring.boot.airBnbApp.dto.RoomPriceResponseDto;
 import com.learn.spring.boot.airBnbApp.entity.Hotel;
 import com.learn.spring.boot.airBnbApp.entity.Room;
 import com.learn.spring.boot.airBnbApp.entity.User;
@@ -10,6 +12,8 @@ import com.learn.spring.boot.airBnbApp.entity.enums.Role;
 import com.learn.spring.boot.airBnbApp.exception.ResourceNotFoundException;
 import com.learn.spring.boot.airBnbApp.exception.UnAuthorisedException;
 import com.learn.spring.boot.airBnbApp.repository.HotelRepository;
+import com.learn.spring.boot.airBnbApp.repository.InventoryRepository;
+import com.learn.spring.boot.airBnbApp.repository.RoomRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -17,12 +21,16 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import static com.learn.spring.boot.airBnbApp.util.AppUtils.getCurrentUser;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class HotelAdminAdminServiceImpl implements HotelAdminService {
+public class HotelAdminServiceImpl implements HotelAdminService {
 
     private final HotelRepository hotelRepository;
 
@@ -31,6 +39,10 @@ public class HotelAdminAdminServiceImpl implements HotelAdminService {
     private final InventoryService inventoryService;
 
     private final RoomService roomService;
+
+    private final RoomRepository roomRepository;
+
+    private final InventoryRepository inventoryRepository;
 
     @Override
     public HotelDto createHotel(HotelDto hotelDto) {
@@ -121,23 +133,44 @@ public class HotelAdminAdminServiceImpl implements HotelAdminService {
         //hotelRepository.save(hotel);
         log.info("Hotel Got Activated with id: {}", hotelId);
     }
-    /*Public Method*/
+
     @Override
-    public HotelInfoDto getHotelInfoById(Long hotelId) {
+    public HotelInfoDto getHotelInfoById(Long hotelId, HotelInfoRequestDto hotelInfoRequestDto) {
         Hotel hotel = hotelRepository
                 .findById(hotelId)
                 .orElseThrow(() -> new ResourceNotFoundException("Hotel not found with ID: "+hotelId));
 
-        List<RoomDto> rooms = hotel.getRooms()
-                .stream()
-                .map((element) -> modelMapper.map(element, RoomDto.class))
-                .toList();
+        long daysCount = ChronoUnit.DAYS.between(hotelInfoRequestDto.getStartDate(), hotelInfoRequestDto.getEndDate())+1;
+
+        List<RoomPriceDto> roomPriceDtoList = inventoryRepository.findRoomAveragePrice(hotelId,
+                hotelInfoRequestDto.getStartDate(), hotelInfoRequestDto.getEndDate(),
+                hotelInfoRequestDto.getRoomsCount(), daysCount);
+
+        List<RoomPriceResponseDto> rooms = roomPriceDtoList.stream()
+                .map(roomPriceDto -> {
+                    RoomPriceResponseDto roomPriceResponseDto = modelMapper.map(roomPriceDto.getRoom(),
+                            RoomPriceResponseDto.class);
+                    roomPriceResponseDto.setPrice(roomPriceDto.getAveragePrice());
+                    return roomPriceResponseDto;
+                })
+                .collect(Collectors.toList());
 
         return new HotelInfoDto(modelMapper.map(hotel, HotelDto.class), rooms);
     }
-
     private void isHotelExist(Long hotelId) {
         boolean exists = hotelRepository.existsById(hotelId);
         if (!exists) throw new ResourceNotFoundException("Hotel not found with id: "+ hotelId);
+    }
+
+    @Override
+    public List<HotelDto> getAllHotels() {
+        User user = getCurrentUser();
+        log.info("Getting all hotels for the admin user with ID: {}", user.getId());
+        List<Hotel> hotels = hotelRepository.findByOwner(user);
+
+        return hotels
+                .stream()
+                .map((element) -> modelMapper.map(element, HotelDto.class))
+                .collect(Collectors.toList());
     }
 }

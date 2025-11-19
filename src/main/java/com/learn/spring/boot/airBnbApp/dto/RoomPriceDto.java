@@ -12,5 +12,5 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 public class RoomPriceDto {
     private Room room;
-    private BigDecimal averagePrice;
+    private Double averagePrice;
 }
